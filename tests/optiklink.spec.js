@@ -103,9 +103,10 @@ test('OptikLink 保活', async ({ page }, testInfo) => {
         const statusText = await page.locator('p.sc-168cvuh-1').innerText().catch(() => '');
         console.log(`📊 服务器状态：${statusText.trim()}`);
 
-        if (statusText.toLowerCase().includes('running')) {
+        // ✨ 这里的判断逻辑已升级：Running 和 Starting 都视为保活成功
+        if (statusText.toLowerCase().includes('running') || statusText.toLowerCase().includes('starting')) {
             console.log('🎉 保活成功！');
-            await sendTG('✅ 保活成功！\n💻 服务器状态：🚀 Running', serverInfo.name);
+            await sendTG(`✅ 保活成功！\n💻 服务器状态：🚀 ${statusText.trim()}`, serverInfo.name);
         } else if (statusText.toLowerCase().includes('offline')) {
             console.log('⚠️ 服务器离线，尝试启动...');
             await page.click('button:has-text("Start")');
@@ -116,7 +117,8 @@ test('OptikLink 保活', async ({ page }, testInfo) => {
                 await page.waitForTimeout(5000);
                 const s = await page.locator('p.sc-168cvuh-1').innerText().catch(() => '');
                 console.log(`  🔄 第 ${i + 1} 次检查，状态：${s.trim()}`);
-                if (s.toLowerCase().includes('running')) {
+                // 同样，启动后只要检测到 Running 或 Starting 都算成功
+                if (s.toLowerCase().includes('running') || s.toLowerCase().includes('starting')) {
                     started = true;
                     break;
                 }
