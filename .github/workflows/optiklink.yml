@@ -26,7 +26,11 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       - name: 🔑 还原登录凭证
-        run: echo '${{ secrets.OPTIKLINK_STATE }}' > state.json
+        run: |
+          cat << 'EOF' > state.json
+          ${{ secrets.OPTIKLINK_STATE }}
+          EOF
+
 
       - name: 🚀 运行保活脚本
         env:
