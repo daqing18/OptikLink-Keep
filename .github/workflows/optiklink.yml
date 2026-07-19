@@ -11,41 +11,53 @@ permissions:
 
 jobs:
   keepalive:
+    name: 🔄 执行保活
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - name: 📥 拉取代码
+        uses: actions/checkout@v4
 
-      - name: 🛠️ 安装依赖
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb chromium-browser
-          pip install seleniumbase requests
+      - name: 🟢 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 📦 安装依赖
+        run: npm install
+
+      - name: 🌐 安装 Playwright 浏览器
+        run: npx playwright install chromium --with-deps
 
       - name: ⚙ 设置代理 (sing-box)
-        continue-on-error: true
         env:
           NODE_LINK: ${{ secrets.NODE_LINK }}
         run: |
           if [ -n "$NODE_LINK" ]; then
             bash <(wget -qO- https://main.ssss.nyc.mn/setup_proxy.sh)
-            echo "IS_PROXY=true" >> $GITHUB_ENV
-            echo "PROXY_SERVER=http://127.0.0.1:1081" >> $GITHUB_ENV
+            echo "PROXY_URL=socks5://127.0.0.1:1081" >> $GITHUB_ENV
           fi
 
       - name: 🚀 运行保活脚本
         env:
-          DISCORD_ACCOUNT: ${{ secrets.DISCORD_ACCOUNT }} # 格式: email,password
-          PANEL_ACCOUNT:   ${{ secrets.PANEL_ACCOUNT }}   # 格式: user,pass
-          TG_BOT_TOKEN:    ${{ secrets.TG_BOT_TOKEN }}
-          TG_CHAT_ID:      ${{ secrets.TG_CHAT_ID }}
-          IS_PROXY:        ${{ env.IS_PROXY }}
-          PROXY_SERVER:    ${{ env.PROXY_SERVER }}
-        run: xvfb-run --auto-servernum python3 optiklink_bot.py
+          DISCORD_ACCOUNT: ${{ secrets.DISCORD_ACCOUNT }}
+          PANEL_ACCOUNT:   ${{ secrets.PANEL_ACCOUNT }}
+          TG_BOT:          ${{ secrets.TG_BOT }}
+          PROXY_URL:       ${{ env.PROXY_URL }}
+        run: npx playwright test
 
-      - name: 🧹 清理旧记录
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          runs=$(gh run list --workflow="${{ github.workflow }}" --limit=100 --json databaseId --jq '.[].databaseId')
-          for run_id in $runs; do gh run delete $run_id || true; done
+      - name: 📸 上传失败截图
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-screenshots
+          path: test-results/
+          retention-days: 7
+
+      - name: 🧹 清理旧的运行记录
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 0
+          keep_minimum_runs: 3
