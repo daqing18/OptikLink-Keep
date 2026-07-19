@@ -41,8 +41,8 @@ jobs:
             echo "🔍 检查 sing-box 监听端口："
             sudo ss -tlnp | grep sing-box || echo "未找到 sing-box 进程"
             
-            # 换回 socks5 协议，并使用最常见的 2080 端口
-            echo "PROXY_URL=socks5://127.0.0.1:2080" >> $GITHUB_ENV
+            # 换回 socks5 协议，并使用最常见的 1080 端口
+            echo "PROXY_URL=socks5://127.0.0.1:1080" >> $GITHUB_ENV
           fi
 
       - name: 🚀 运行保活脚本
