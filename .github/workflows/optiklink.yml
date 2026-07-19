@@ -36,18 +36,13 @@ jobs:
           if [ -n "$NODE_LINK" ]; then
             bash <(wget -qO- https://main.ssss.nyc.mn/setup_proxy.sh)
             sleep 3
-            
-            # 【调试专用】直接打印出 sing-box 到底在监听哪个端口，不再靠猜
-            echo "🔍 检查 sing-box 监听端口："
-            sudo ss -tlnp | grep sing-box || echo "未找到 sing-box 进程"
-            
-            # 换回 socks5 协议，并使用最常见的 1080 端口
+            # 默认监听 1080 SOCKS5 端口
             echo "PROXY_URL=socks5://127.0.0.1:1080" >> $GITHUB_ENV
           fi
 
       - name: 🚀 运行保活脚本
         env:
-          DISCORD_ACCOUNT: ${{ secrets.DISCORD_ACCOUNT }}
+          DISCORD_TOKEN:   ${{ secrets.DISCORD_TOKEN }}   # 【修改点】改为 Discord Token
           PANEL_ACCOUNT:   ${{ secrets.PANEL_ACCOUNT }}
           TG_BOT:          ${{ secrets.TG_BOT }}
           PROXY_URL:       ${{ env.PROXY_URL }}
