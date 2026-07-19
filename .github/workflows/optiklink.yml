@@ -1,9 +1,13 @@
-name: 🎮 OptikLink-Keep
+Name: 🎮 OptikLink-Keep
 
 on:
   schedule:
     - cron: '0 1 */2 * *'
   workflow_dispatch:
+  
+permissions:
+  actions: write
+  contents: read
 
 jobs:
   keepalive:
@@ -25,16 +29,23 @@ jobs:
       - name: 🌐 安装 Playwright 浏览器
         run: npx playwright install chromium --with-deps
 
-      - name: 🔑 还原登录凭证
+      - name: ⚙ 设置代理 (sing-box)
+        continue-on-error: true
+        env:
+          NODE_LINK: ${{ secrets.NODE_LINK }}
         run: |
-          cat << 'EOF' > state.json
-          ${{ secrets.OPTIKLINK_STATE }}
-          EOF
-
+          if [ -n "$NODE_LINK" ]; then
+            bash <(wget -qO- https://main.ssss.nyc.mn/setup_proxy.sh)
+            echo "PROXY_SERVER=http://127.0.0.1:1081" >> $GITHUB_ENV
+          else
+            echo "ℹ️ 未配置 NODE_LINK，将使用直连模式运行"
+          fi
 
       - name: 🚀 运行保活脚本
         env:
-          TG_BOT: ${{ secrets.TG_BOT }}
+          DISCORD_ACCOUNT: ${{ secrets.DISCORD_ACCOUNT }}
+          PANEL_ACCOUNT:   ${{ secrets.PANEL_ACCOUNT }}
+          TG_BOT:          ${{ secrets.TG_BOT }}
         run: npx playwright test
 
       - name: 📸 上传失败截图
@@ -45,3 +56,10 @@ jobs:
           path: test-results/
           retention-days: 7
 
+      - name: 🧹 清理旧的运行记录
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 0
+          keep_minimum_runs: 3
