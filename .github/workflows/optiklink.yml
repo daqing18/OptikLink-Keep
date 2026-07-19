@@ -37,8 +37,8 @@ jobs:
             bash <(wget -qO- https://main.ssss.nyc.mn/setup_proxy.sh)
             # 等待 3 秒让后台代理彻底启动
             sleep 3 
-            # 将端口改为该脚本默认的 2080 (使用 http 协议兼容性更好)
-            echo "PROXY_URL=http://127.0.0.1:2080" >> $GITHUB_ENV
+            # 将端口改为该脚本默认的 1080 (使用 http 协议兼容性更好)
+            echo "PROXY_URL=http://127.0.0.1:1080" >> $GITHUB_ENV
           fi
 
       - name: 🚀 运行保活脚本
