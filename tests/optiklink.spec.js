@@ -136,13 +136,19 @@ test('OptikLink 保活', async ({ }, testInfo) => {
         await page.waitForURL(/optiklink\.net/, { timeout: 30000 });
         console.log(`✅ 登录成功！当前：${page.url()}`);
 
-        console.log('📤 点击 Login to Panel...');
-        await page.click('a[data-target="#logintopanel"]');
-        await page.waitForTimeout(2000);
+        console.log('📤 准备进入控制台...');
+        try {
+            await page.click('a[data-target="#logintopanel"]', { timeout: 5000 });
+            await page.waitForTimeout(2000);
+        } catch (e) {
+            // 前端结构如果有变不强求，继续往下找
+        }
 
         console.log('📤 点击 Panel Login...');
-        const panelLoginBtn = page.getByRole('button', { name: 'Panel Login' });
-        await panelLoginBtn.waitFor({ state: 'visible' });
+        // 【本次修改核心】：取消严格的 button 验证，直接匹配文本找按钮或链接
+        const panelLoginBtn = page.locator('text=/Panel Login/i').last();
+        
+        await panelLoginBtn.waitFor({ state: 'visible', timeout: 15000 });
 
         const [panelPage] = await Promise.all([
             page.context().waitForEvent('page'),
