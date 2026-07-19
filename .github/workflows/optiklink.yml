@@ -35,10 +35,14 @@ jobs:
         run: |
           if [ -n "$NODE_LINK" ]; then
             bash <(wget -qO- https://main.ssss.nyc.mn/setup_proxy.sh)
-            # 等待 3 秒让后台代理彻底启动
-            sleep 3 
-            # 将端口改为该脚本默认的 1080 (使用 http 协议兼容性更好)
-            echo "PROXY_URL=http://127.0.0.1:1080" >> $GITHUB_ENV
+            sleep 3
+            
+            # 【调试专用】直接打印出 sing-box 到底在监听哪个端口，不再靠猜
+            echo "🔍 检查 sing-box 监听端口："
+            sudo ss -tlnp | grep sing-box || echo "未找到 sing-box 进程"
+            
+            # 换回 socks5 协议，并使用最常见的 2080 端口
+            echo "PROXY_URL=socks5://127.0.0.1:2080" >> $GITHUB_ENV
           fi
 
       - name: 🚀 运行保活脚本
