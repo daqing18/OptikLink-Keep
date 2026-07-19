@@ -115,28 +115,21 @@ async function handleOAuthPage(page) {
 }
 
 test('OptikLink 保活', async ({ }, testInfo) => {
+    const proxyUrl = '';
+
     if (!email || !password) {
         throw new Error('❌ 缺少账号配置，格式: DISCORD_ACCOUNT=email,password');
     }
 
     let proxyConfig = undefined;
-    if (process.env.PROXY_SERVER) {
-        try {
-            const http = require('http');
-            await new Promise((resolve, reject) => {
-                const req = http.request(
-                    { host: '127.0.0.1', port: 1081, path: '/', method: 'GET', timeout: 3000 },
-                    () => resolve()
-                );
-                req.on('error', reject);
-                req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
-                req.end();
-            });
-            proxyConfig = { server: process.env.PROXY_SERVER };
-            console.log('🛡️ 本地代理连通，使用 sing-box 转发 (端口: 1081)');
-        } catch {
-            console.log('⚠️ 本地代理不可达，降级为直连');
-        }
+    
+    // 这里将原来的 GOST 判断改成了 PROXY_URL 以适配 sing-box
+    if (process.env.PROXY_URL) {
+        console.log(`🛡️ 代理就绪: ${process.env.PROXY_URL}`);
+        proxyConfig = { server: process.env.PROXY_URL };
+    } else if (proxyUrl) {
+        proxyConfig = { server: proxyUrl };
+        console.log(`🛡️ 使用代理: ${proxyUrl.replace(/:\/\/.*@/, '://***@')}`);
     }
 
     console.log('🔧 启动浏览器...');
@@ -267,6 +260,7 @@ test('OptikLink 保活', async ({ }, testInfo) => {
                 throw new Error(`❌ Discord 登录失败: ${err}`);
             }
         } else if (landedUrl.includes('discord.com/oauth2')) {
+            // 检查按钮：Log In 说明没有登录态，需先登录
             try {
                 const btn = await page.waitForSelector('button.primary_a22cb0', { timeout: 5000 });
                 const btnText = (await btn.innerText()).trim();
@@ -289,9 +283,11 @@ test('OptikLink 保活', async ({ }, testInfo) => {
                 }
             } catch (e) {
                 if (e.message.includes('Discord 登录失败')) throw e;
+                // 找不到按钮说明已自动处理
             }
         }
 
+        // 处理可能出现的 OAuth 授权页
         console.log('⏳ 等待 OAuth 授权...');
         try {
             await page.waitForURL(/discord\.com\/oauth2\/authorize/, { timeout: 6000 });
@@ -308,6 +304,7 @@ test('OptikLink 保活', async ({ }, testInfo) => {
             if (e.message.includes('Discord 登录失败')) throw e;
         }
 
+        // ✅ 修复：OAuth 授权后若被重定向回 discord.com/login，再次填写账密登录
         if (page.url().includes('discord.com/login')) {
             console.log('🔄 OAuth 后被重定向至登录页，再次填写账号密码...');
             await page.fill('input[name="email"]', email);
@@ -324,6 +321,7 @@ test('OptikLink 保活', async ({ }, testInfo) => {
                 throw new Error(`❌ Discord 二次登录失败: ${err}`);
             }
 
+            // 二次登录后可能再次出现 OAuth 授权页
             if (page.url().includes('discord.com/oauth2')) {
                 console.log('🔍 二次进入 OAuth 授权页，处理中...');
                 await handleOAuthPage(page);
@@ -350,6 +348,7 @@ test('OptikLink 保活', async ({ }, testInfo) => {
 
         console.log('📤 点击 Panel Login...');
 
+        // 最佳实践：通过 Role 和文本定位按钮，并显式等待其完全可见
         const panelLoginBtn = page.getByRole('button', { name: 'Panel Login' });
         await panelLoginBtn.waitFor({ state: 'visible' });
 
@@ -366,6 +365,7 @@ test('OptikLink 保活', async ({ }, testInfo) => {
         const currentUrl = panelPage.url();
         console.log(`✅ 已到达控制台页面：${currentUrl}`);
 
+        // 修复点2：判断当前是否真的在登录页，如果在首页说明已经自动登录了
         if (currentUrl.includes('/auth/login')) {
             console.log('✏️ 填写控制台账号密码...');
             await panelPage.fill('input[name="username"]', panelUser);
@@ -381,6 +381,7 @@ test('OptikLink 保活', async ({ }, testInfo) => {
             await panelPage.click('button[type="submit"]');
 
             console.log('⏳ 确认到达控制台首页...');
+            // 这里同样加上 waitUntil: 'domcontentloaded'
             await panelPage.waitForURL(url => !url.toString().includes('/auth/login'), { timeout: TIMEOUT, waitUntil: 'domcontentloaded' });
             console.log(`✅ 控制台登录成功！当前：${panelPage.url()}`);
         } else {
@@ -413,6 +414,7 @@ test('OptikLink 保活', async ({ }, testInfo) => {
         console.log('🔍 检查服务器状态...');
         await serverPage.waitForTimeout(3000);
 
+        // 若服务器处于 CONNECTING / STARTING 等中间态，等待稳定
         let statusText = '';
         for (let i = 0; i < 12; i++) {
             statusText = await serverPage.locator('p.sc-168cvuh-1').innerText().catch(() => '');
