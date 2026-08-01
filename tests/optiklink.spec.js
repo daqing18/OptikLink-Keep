@@ -229,9 +229,9 @@ test('OptikLink 保活', async ({ }, testInfo) => {
                 throw new Error('❌ Start 启动失败，等待超时');
             }
         } else {
-            // 修复②：处理 STARTING 状态，直接发通知
+            // STARTING 状态 —— 脚本正常运行，也算保活成功
             console.log('⏳ 服务器正在启动中...');
-            await sendTG('⏳ 服务器正在启动中...\n💻 服务器状态：🚀 ' + statusText.trim(), serverInfo.name);
+            await sendTG('✅ 保活成功！\n💻 服务器状态：🚀 ' + statusText.trim(), serverInfo.name);
         }
 
     } catch (e) {
