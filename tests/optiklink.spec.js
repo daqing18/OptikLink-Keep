@@ -193,7 +193,8 @@ test('OptikLink 保活', async ({ }, testInfo) => {
         let statusText = '';
         for (let i = 0; i < 12; i++) {
             statusText = await panelPage.locator('p.sc-168cvuh-1').innerText().catch(() => '');
-            if (/(running|offline|stopped)/i.test(statusText)) break;
+            // 修复①：加入 starting 状态检测，避免循环跑满60秒
+            if (/(running|starting|offline|stopped)/i.test(statusText)) break;
             await panelPage.waitForTimeout(5000);
         }
 
@@ -217,6 +218,10 @@ test('OptikLink 保活', async ({ }, testInfo) => {
             } else {
                 throw new Error('❌ Start 启动失败，等待超时');
             }
+        } else {
+            // 修复②：处理 STARTING 状态，直接发通知
+            console.log('⏳ 服务器正在启动中...');
+            await sendTG('⏳ 服务器正在启动中...\n💻 状态：' + statusText.trim(), serverInfo.name);
         }
 
     } catch (e) {
