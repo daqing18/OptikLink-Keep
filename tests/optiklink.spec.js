@@ -230,7 +230,7 @@ test('OptikLink 保活', async ({ }, testInfo) => {
         } else {
             // 修复②：处理 STARTING 状态，直接发通知
             console.log('⏳ 服务器正在启动中...');
-            await sendTG('⏳ 服务器正在启动中...\n💻 状态：' + statusText.trim(), serverInfo.name);
+            await sendTG('⏳ 服务器正在启动中...\n💻 服务器状态：🚀 ' + statusText.trim(), serverInfo.name);
         }
 
     } catch (e) {
