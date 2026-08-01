@@ -145,15 +145,24 @@ test('OptikLink 保活', async ({ }, testInfo) => {
         }
 
         console.log('📤 点击 Panel Login...');
-        // 【本次修改核心】：取消严格的 button 验证，直接匹配文本找按钮或链接
+        // 尝试通过按钮点击打开控制台，如果按钮不可见则直接导航
+        let panelPage;
         const panelLoginBtn = page.locator('text=/Panel Login/i').last();
         
-        await panelLoginBtn.waitFor({ state: 'visible', timeout: 15000 });
-
-        const [panelPage] = await Promise.all([
-            page.context().waitForEvent('page'),
-            panelLoginBtn.click(),
-        ]);
+        try {
+            await panelLoginBtn.waitFor({ state: 'visible', timeout: 5000 });
+            // 按钮可见，正常点击打开新标签页
+            [panelPage] = await Promise.all([
+                page.context().waitForEvent('page'),
+                panelLoginBtn.click(),
+            ]);
+        } catch (e) {
+            // 按钮隐藏或不可见，直接获取 href 导航
+            console.log('⚠️ Panel Login 按钮不可见，尝试直接导航到控制台地址...');
+            const panelUrl = await panelLoginBtn.getAttribute('href').catch(() => 'https://control.optiklink.net/auth/login');
+            panelPage = await page.context().newPage();
+            await panelPage.goto(panelUrl, { waitUntil: 'domcontentloaded' });
+        }
 
         panelPage.setDefaultTimeout(TIMEOUT);
         activePage = panelPage;
