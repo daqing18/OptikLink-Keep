@@ -160,7 +160,8 @@ test('OptikLink 保活', async ({ }, testInfo) => {
             // 按钮隐藏或不可见，直接获取 href 导航
             console.log('⚠️ Panel Login 按钮不可见，尝试直接导航到控制台地址...');
             const panelUrl = await panelLoginBtn.getAttribute('href').catch(() => 'https://control.optiklink.net/auth/login');
-            panelPage = await page.context().newPage();
+            const panelContext = await browser.newContext();
+            panelPage = await panelContext.newPage();
             await panelPage.goto(panelUrl, { waitUntil: 'domcontentloaded' });
         }
 
