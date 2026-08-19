@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: '0 1 */2 * *'
   workflow_dispatch:
-  
+
 permissions:
   actions: write
   contents: read
@@ -42,7 +42,7 @@ jobs:
 
       - name: 🚀 运行保活脚本
         env:
-          DISCORD_TOKEN:   ${{ secrets.DISCORD_TOKEN }}   # 【修改点】改为 Discord Token
+          DISCORD_TOKEN:   ${{ secrets.DISCORD_TOKEN }}   # 改为 Discord Token
           PANEL_ACCOUNT:   ${{ secrets.PANEL_ACCOUNT }}
           TG_BOT:          ${{ secrets.TG_BOT }}
           PROXY_URL:       ${{ env.PROXY_URL }}
@@ -56,10 +56,10 @@ jobs:
           path: test-results/
           retention-days: 7
 
-      - name: 🧹 清理旧的运行记录
+      - name: 🧹 清理旧的运行记录（只保留最新 1 次）
         uses: Mattraks/delete-workflow-runs@v2
         with:
           token: ${{ github.token }}
           repository: ${{ github.repository }}
           retain_days: 0
-          keep_minimum_runs: 3
+          keep_minimum_runs: 1
